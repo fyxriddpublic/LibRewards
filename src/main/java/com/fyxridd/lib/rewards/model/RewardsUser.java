@@ -18,17 +18,17 @@ public class RewardsUser implements Serializable{
     private int level;
     private String tip;
     //可为空列表不为null
-    private HashMap<Integer, String> itemsData;
+    private Map<Integer, String> itemsData;
 
     //临时,不保存到数据库
 
     //可为空列表不为null
-    private HashMap<Integer,ItemStack> itemsHash;
+    private Map<Integer,ItemStack> itemsHash;
 
     public RewardsUser(){}
 
     public RewardsUser(String name, String type, int money, int exp,
-                       int level, String tip, HashMap<Integer, ItemStack> itemsHash) {
+                       int level, String tip, Map<Integer, ItemStack> itemsHash) {
         super();
         this.name = name;
         this.type = type;
@@ -88,19 +88,19 @@ public class RewardsUser implements Serializable{
         this.tip = tip;
     }
 
-    public HashMap<Integer, String> getItemsData() {
+    public Map<Integer, String> getItemsData() {
         return itemsData;
     }
 
-    public void setItemsData(HashMap<Integer, String> itemsData) {
+    public void setItemsData(Map<Integer, String> itemsData) {
         this.itemsData = itemsData;
     }
 
-    public HashMap<Integer, ItemStack> getItemsHash() {
+    public Map<Integer, ItemStack> getItemsHash() {
         return itemsHash;
     }
 
-    public void setItemsHash(HashMap<Integer, ItemStack> itemsHash) {
+    public void setItemsHash(Map<Integer, ItemStack> itemsHash) {
         this.itemsHash = itemsHash;
     }
 
@@ -109,8 +109,6 @@ public class RewardsUser implements Serializable{
      */
     public void updateItems() {
         this.itemsData = new HashMap<>();
-        for (Map.Entry<Integer, ItemStack> entry:itemsHash.entrySet()) {
-            itemsData.put(entry.getKey(), ItemsApi.saveItem(entry.getValue()));
-        }
+        for (Map.Entry<Integer, ItemStack> entry:itemsHash.entrySet()) itemsData.put(entry.getKey(), ItemsApi.saveItem(entry.getValue()));
     }
 }

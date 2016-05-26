@@ -1,17 +1,17 @@
 package com.fyxridd.lib.rewards.model;
 
 public class RewardsInfo {
-    String plugin;
-    String type;
+    private String plugin;
+    private String type;
 
-    int minMoney, maxMoney;
-    int minExp, maxExp;
-    int minLevel, maxLevel;
+    private int minMoney, maxMoney;
+    private int minExp, maxExp;
+    private int minLevel, maxLevel;
 
-    String itemsPlugin, itemsGetType;
-    String enchantsPlugin, enchantsType;
+    private String itemsPlugin, itemsGetType;
+    private String enchantsPlugin, enchantsType;
 
-    String tip;
+    private String tip;
 
     public RewardsInfo(String plugin, String type,
                        int minMoney, int maxMoney,
@@ -34,5 +34,57 @@ public class RewardsInfo {
         this.itemsGetType = itemsGetType;
         this.enchantsPlugin = enchantsPlugin;
         this.enchantsType = enchantsType;
+    }
+
+    public String getPlugin() {
+        return plugin;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public int getMinMoney() {
+        return minMoney;
+    }
+
+    public int getMaxMoney() {
+        return maxMoney;
+    }
+
+    public int getMinExp() {
+        return minExp;
+    }
+
+    public int getMaxExp() {
+        return maxExp;
+    }
+
+    public int getMinLevel() {
+        return minLevel;
+    }
+
+    public int getMaxLevel() {
+        return maxLevel;
+    }
+
+    public String getItemsPlugin() {
+        return itemsPlugin;
+    }
+
+    public String getItemsGetType() {
+        return itemsGetType;
+    }
+
+    public String getEnchantsPlugin() {
+        return enchantsPlugin;
+    }
+
+    public String getEnchantsType() {
+        return enchantsType;
+    }
+
+    public String getTip() {
+        return tip;
     }
 }

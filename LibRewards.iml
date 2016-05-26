@@ -23,5 +23,6 @@
     <orderEntry type="module" module-name="LibItems" scope="PROVIDED" />
     <orderEntry type="module" module-name="LibEnchants" scope="PROVIDED" />
     <orderEntry type="module" module-name="LibItemShow" scope="PROVIDED" />
+    <orderEntry type="module" module-name="LibNames" scope="PROVIDED" />
   </component>
 </module>

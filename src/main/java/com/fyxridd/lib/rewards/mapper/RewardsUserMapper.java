@@ -11,7 +11,7 @@ public interface RewardsUserMapper {
      */
     boolean exist(@Param("name") String name, @Param("type") String type);
 
-    List<RewardsUser> selectAll();
+    List<RewardsUser> selectAll(@Param("name") String name);
 
     void insert(@Param("user") RewardsUser user);
 

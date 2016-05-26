@@ -1,18 +1,5 @@
 package com.fyxridd.lib.rewards.func;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import org.bukkit.Bukkit;
-import org.bukkit.command.CommandSender;
-import org.bukkit.entity.Player;
-import org.bukkit.inventory.Inventory;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
-
-import com.fyxridd.lib.core.api.CoreApi;
 import com.fyxridd.lib.core.api.MessageApi;
 import com.fyxridd.lib.core.api.PerApi;
 import com.fyxridd.lib.core.api.PlayerApi;
@@ -29,6 +16,15 @@ import com.fyxridd.lib.rewards.config.RewardsConfig;
 import com.fyxridd.lib.rewards.model.RewardsUser;
 import com.fyxridd.lib.show.item.api.Info;
 import com.fyxridd.lib.show.item.api.ShowApi;
+import org.bukkit.Bukkit;
+import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
+import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @FuncType("item")
 public class RewardsItem {
@@ -60,19 +56,20 @@ public class RewardsItem {
         Player p = (Player) sender;
         
         //目标玩家存在性检测
-        tar = PlayerApi.getRealName(p, tar);
+        try {
+            tar = PlayerApi.getRealName(p, tar);
+        } catch (NotReadyException e) {
+            return;
+        }
         if (tar == null) return;
         //查看其它玩家奖励列表权限检测
         if (!p.getName().equals(tar) && !PerApi.checkHasPer(p.getName(), rewardsConfig.getInfoOtherPer())) return;
-        //检测初始化
-        checkInit(tar);
         //目标玩家没有未获取的奖励列表
-        Map<String, Info> infHash = infoHash.get(tar);
-        if (infHash.isEmpty()) {
+        int maxPage = RewardsPlugin.instance.getRewardsManager().getRewardsUserSize(tar);
+        if (maxPage <= 0) {
             MessageApi.send(p, get(p.getName(), 655), true);
             return;
         }
-        int maxPage = infHash.size();
         //页面检测
         if (page < 1 || page > maxPage) {
             MessageApi.send(p, get(p.getName(), 705, maxPage), true);
@@ -83,7 +80,7 @@ public class RewardsItem {
             String type = getKey(info, infHash);
             if (type == null) return;//异常
             try {
-                RewardsUser ru = userHash.get(tar).get(type);
+                RewardsUser ru = RewardsPlugin.instance.getRewardsManager().getRewardsUser(tar, type)
 
                 //创建操作栏
                 Inventory inv = Bukkit.createInventory(p, 9, "none");
@@ -128,7 +125,6 @@ public class RewardsItem {
 
                 ShowApi.open(p, info, null, inv);
             } catch (Exception e) {
-                return false;
             }
         }
     }

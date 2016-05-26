@@ -1,31 +1,39 @@
 package com.fyxridd.lib.rewards.manager;
 
-import com.fyxridd.lib.core.api.*;
-import com.fyxridd.lib.core.api.event.ReloadConfigEvent;
-import com.fyxridd.lib.core.api.inter.FunctionInterface;
+import com.fyxridd.lib.core.api.CoreApi;
+import com.fyxridd.lib.core.api.ItemApi;
+import com.fyxridd.lib.core.api.MessageApi;
+import com.fyxridd.lib.core.api.UtilApi;
+import com.fyxridd.lib.core.api.config.ConfigApi;
+import com.fyxridd.lib.core.api.config.Setter;
+import com.fyxridd.lib.core.api.fancymessage.FancyMessage;
 import com.fyxridd.lib.enchants.api.EnchantsApi;
 import com.fyxridd.lib.func.api.FuncApi;
 import com.fyxridd.lib.items.api.ItemsApi;
 import com.fyxridd.lib.rewards.RewardsPlugin;
+import com.fyxridd.lib.rewards.config.LangConfig;
 import com.fyxridd.lib.rewards.func.RewardsCmd;
+import com.fyxridd.lib.rewards.func.RewardsItem;
 import com.fyxridd.lib.rewards.model.RewardsInfo;
 import com.fyxridd.lib.rewards.model.RewardsUser;
 import com.fyxridd.lib.show.item.api.Info;
 import com.fyxridd.lib.show.item.api.OptionClickEventHandler;
-
+import com.fyxridd.lib.show.item.api.ShowApi;
 import org.bukkit.Bukkit;
-import org.bukkit.Material;
 import org.bukkit.configuration.MemorySection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
+import org.bukkit.event.Event;
+import org.bukkit.event.EventException;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.server.PluginDisableEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.plugin.EventExecutor;
 
 import java.io.File;
 import java.util.*;
@@ -35,9 +43,8 @@ public class RewardsManager implements OptionClickEventHandler {
     //玩家一加入游戏,就检测从数据库中读取所有的RewardsUser到缓存
 
     //配置
-    private String adminPer;
-    private String usePer;
-    private String infoOtherPer;
+    private LangConfig langConfig;
+
     private boolean tipRewards;
     private ItemStack pre,get,next,del;
     private int infoPos, prePos, getPos, nextPos, delPos;
@@ -61,39 +68,47 @@ public class RewardsManager implements OptionClickEventHandler {
     private Map<String, Set<RewardsUser>> needDeleteList = new HashMap<>();
 
     public RewardsManager() {
+        //添加配置监听
+        ConfigApi.addListener(RewardsPlugin.instance.pn, LangConfig.class, new Setter<LangConfig>() {
+            @Override
+            public void set(LangConfig value) {
+                langConfig = value;
+            }
+        });
+
         //注册功能
         FuncApi.register(RewardsPlugin.instance.pn, new RewardsCmd());
-        
-        //读取配置文件
-        loadConfig();
-        //注册事件
-        Bukkit.getPluginManager().registerEvents(this, RewardsPlugin.instance);
-        //注册功能
-        FuncApi.register(this);
+        FuncApi.register(RewardsPlugin.instance.pn, new RewardsItem());
+
         //计时器: 更新
-        Bukkit.getScheduler().scheduleSyncRepeatingTask(CorePlugin.instance, new Runnable() {
+        Bukkit.getScheduler().scheduleSyncRepeatingTask(RewardsPlugin.instance, new Runnable() {
             @Override
             public void run() {
                 saveAll();
             }
         }, 436, 436);
-    }
 
-    public void onDisable() {
-        saveAll();
-    }
-
-    @EventHandler(priority= EventPriority.LOW)
-    public void onReloadConfig(ReloadConfigEvent e) {
-        if (e.getPlugin().equals(RewardsPlugin.pn)) loadConfig();
-    }
-
-    @EventHandler(priority=EventPriority.LOWEST)
-    public void onPlayerJoin(PlayerJoinEvent e) {
-        //检测初始化
-        checkInit(e.getPlayer().getName());
-        //提示领取奖励
-        if (tipRewards && userHash.get(e.getPlayer().getName()).size() > 0) ShowApi.tip(e.getPlayer(), get(660), true);
+        //注册事件
+        {
+            //插件停止
+            Bukkit.getPluginManager().registerEvent(PluginDisableEvent.class, RewardsPlugin.instance, EventPriority.NORMAL, new EventExecutor() {
+                @Override
+                public void execute(Listener listener, Event e) throws EventException {
+                    saveAll();
+                }
+            }, RewardsPlugin.instance);
+            //玩家加入
+            Bukkit.getPluginManager().registerEvent(PlayerJoinEvent.class, RewardsPlugin.instance, EventPriority.LOWEST, new EventExecutor() {
+                @Override
+                public void execute(Listener listener, Event e) throws EventException {
+                    PlayerJoinEvent event = (PlayerJoinEvent) e;
+                    //检测初始化
+                    checkInit(event.getPlayer().getName());
+                    //提示领取奖励
+                    if (tipRewards && getRewardsUserSize(event.getPlayer().getName()) > 0) MessageApi.send(event.getPlayer(), get(event.getPlayer().getName(), 660), true);
+                }
+            }, RewardsPlugin.instance);
+        }
     }
 
     @Override
@@ -141,147 +156,85 @@ public class RewardsManager implements OptionClickEventHandler {
         }
     }
 
-    @Override
-    public String getName() {
-        return FUNC_NAME;
-    }
-
-    /**
-     * 'e 目标玩家 钱 经验 等级[ 说明]' 给目标玩家发奖励(包括物品编辑器中的)
-     * 'f 类型' 请求获取未领取的奖励
-     */
-    @Override
-    public void onOperate(Player p, String... args) {
-        if (args.length > 0) {
-            try {
-                //不定长
-                if (args.length >= 5) {
-                    if (args[0].equalsIgnoreCase("e")) {//给目标玩家发奖励(包括物品编辑器中的)
-                        String tip;
-                        if (args.length == 5) tip = "";
-                        else tip = CoreApi.combine(args, " ", 5, args.length);
-                        give(p, args[1], Integer.parseInt(args[2]), Integer.parseInt(args[3]), Integer.parseInt(args[4]), tip);
-                        return;
-                    }
-                }
-                //定长
-                switch (args.length) {
-                    case 2:
-                        if (args[0].equalsIgnoreCase("f")) {//请求获取未领取的奖励
-                            get(p, args[1]);
-                            return;
-                        }
-                        break;
-                    case 3:
-                        if (args[0].equalsIgnoreCase("c")) {//查看目标玩家的奖励列表
-                            return;
-                        }
-                        break;
-                }
-            } catch (NumberFormatException e) {//数字格式异常
-                ShowApi.tip(p, get(10), true);
-                return;
-            } catch (Exception e) {//操作异常
-                ShowApi.tip(p, get(5), true);
-                return;
-            }
-        }
-        //输入格式错误
-        ShowApi.tip(p, get(40), true);
-    }
-
     /**
      * @see com.fyxridd.lib.rewards.api.RewardsApi#reloadRewards(String)
      */
     public void reloadRewards(String plugin) {
         if (plugin == null) return;
-        reloadRewards(plugin, new File(new File(CoreApi.pluginPath, plugin), "rewards.yml"));
-    }
+        YamlConfiguration config = UtilApi.loadConfigByUTF8(new File(new File(CoreApi.pluginPath, plugin), "rewards.yml"));
+        if (config == null) return;
+        Map<String, RewardsInfo> map = new HashMap<>();
+        rewardsHash.put(plugin, map);
 
-    public void reloadRewards(String plugin, File file) {
-        if (plugin == null || file == null) return;
-        reloadRewards(plugin, CoreApi.loadConfigByUTF8(file));
-    }
-
-    public void reloadRewards(String plugin, YamlConfiguration config) {
-        if (plugin == null || config == null) return;
-
-        rewardsHash.put(plugin, new HashMap<String, RewardsInfo>());
-
-        Map<String, Object> map = config.getValues(false);
-        if (map != null) {
-            for (String type : map.keySet()) {
-                MemorySection ms = (MemorySection) config.get(type);
-                String str;
-                //minMoney,maxMoney
-                int minMoney, maxMoney;
-                str = ms.getString("money");
-                if (str == null || str.isEmpty()) {
-                    minMoney = 0;
-                    maxMoney = 0;
-                }else {
-                    minMoney = Integer.parseInt(str.split("\\-")[0]);
-                    maxMoney = Integer.parseInt(str.split("\\-")[1]);
-                }
-                //minExp,maxExp
-                int minExp, maxExp;
-                str = ms.getString("exp");
-                if (str == null || str.isEmpty()) {
-                    minExp = 0;
-                    maxExp = 0;
-                }else {
-                    minExp = Integer.parseInt(str.split("\\-")[0]);
-                    maxExp = Integer.parseInt(str.split("\\-")[1]);
-                }
-                //minLevel,maxLevel
-                int minLevel, maxLevel;
-                str = ms.getString("level");
-                if (str == null || str.isEmpty()) {
-                    minLevel = 0;
-                    maxLevel = 0;
-                }else {
-                    minLevel = Integer.parseInt(str.split("\\-")[0]);
-                    maxLevel = Integer.parseInt(str.split("\\-")[1]);
-                }
-                //items
-                String s = ms.getString("itemsType");
-                String itemsPlugin = null, itemsGetType = null;
-                if (s != null) {
-                    String[] ss = s.split(":");
-                    switch (ss.length) {
-                        case 1:
-                            itemsPlugin = plugin;
-                            itemsGetType = ss[0];
-                            break;
-                        case 2:
-                            itemsPlugin = ss[0];
-                            itemsGetType = ss[1];
-                            break;
-                    }
-                }
-                //enchants
-                s = ms.getString("enchantsType");
-                String enchantsPlugin = null, enchantsType = null;
-                if (s != null) {
-                    String[] ss = s.split(":");
-                    switch (ss.length) {
-                        case 1:
-                            enchantsPlugin = plugin;
-                            enchantsType = ss[0];
-                            break;
-                        case 2:
-                            enchantsPlugin = ss[0];
-                            enchantsType = ss[1];
-                            break;
-                    }
-                }
-                //tip
-                String tip = ms.getString("tip");
-                //添加
-                RewardsInfo rewardsInfo = new RewardsInfo(plugin, type, minMoney, maxMoney, minExp, maxExp,
-                        minLevel, maxLevel, itemsPlugin, itemsGetType, enchantsPlugin, enchantsType, tip);
-                rewardsHash.get(plugin).put(type, rewardsInfo);
+        for (String type : config.getValues(false).keySet()) {
+            MemorySection ms = (MemorySection) config.get(type);
+            String str;
+            //minMoney,maxMoney
+            int minMoney, maxMoney;
+            str = ms.getString("money");
+            if (str == null || str.isEmpty()) {
+                minMoney = 0;
+                maxMoney = 0;
+            }else {
+                minMoney = Integer.parseInt(str.split("\\-")[0]);
+                maxMoney = Integer.parseInt(str.split("\\-")[1]);
             }
+            //minExp,maxExp
+            int minExp, maxExp;
+            str = ms.getString("exp");
+            if (str == null || str.isEmpty()) {
+                minExp = 0;
+                maxExp = 0;
+            }else {
+                minExp = Integer.parseInt(str.split("\\-")[0]);
+                maxExp = Integer.parseInt(str.split("\\-")[1]);
+            }
+            //minLevel,maxLevel
+            int minLevel, maxLevel;
+            str = ms.getString("level");
+            if (str == null || str.isEmpty()) {
+                minLevel = 0;
+                maxLevel = 0;
+            }else {
+                minLevel = Integer.parseInt(str.split("\\-")[0]);
+                maxLevel = Integer.parseInt(str.split("\\-")[1]);
+            }
+            //items
+            String s = ms.getString("itemsType");
+            String itemsPlugin = null, itemsGetType = null;
+            if (s != null) {
+                String[] ss = s.split(":");
+                switch (ss.length) {
+                    case 1:
+                        itemsPlugin = plugin;
+                        itemsGetType = ss[0];
+                        break;
+                    case 2:
+                        itemsPlugin = ss[0];
+                        itemsGetType = ss[1];
+                        break;
+                }
+            }
+            //enchants
+            s = ms.getString("enchantsType");
+            String enchantsPlugin = null, enchantsType = null;
+            if (s != null) {
+                String[] ss = s.split(":");
+                switch (ss.length) {
+                    case 1:
+                        enchantsPlugin = plugin;
+                        enchantsType = ss[0];
+                        break;
+                    case 2:
+                        enchantsPlugin = ss[0];
+                        enchantsType = ss[1];
+                        break;
+                }
+            }
+            //tip
+            String tip = ms.getString("tip");
+            //添加
+            map.put(type, new RewardsInfo(plugin, type, minMoney, maxMoney, minExp, maxExp, minLevel, maxLevel, itemsPlugin, itemsGetType, enchantsPlugin, enchantsType, tip));
         }
     }
 
@@ -320,7 +273,7 @@ public class RewardsManager implements OptionClickEventHandler {
     /**
      * @see com.fyxridd.lib.rewards.api.RewardsApi#addRewards(String, String, String, int, int, int, String, java.util.HashMap, boolean, boolean)
      */
-    public boolean addRewards(String plugin, String type, String tar, int money, int exp, int level, String tip, HashMap<Integer, ItemStack> itemsHash, boolean force, boolean direct) {
+    public boolean addRewards(String plugin, String type, String tar, int money, int exp, int level, String tip, Map<Integer, ItemStack> itemsHash, boolean force, boolean direct) {
         if (tar == null || money < 0 || exp < 0 || level < 0 || CoreApi.getRealName(null, tar) == null) return false;
         //修正
         if (plugin == null) plugin = RewardsPlugin.pn;
@@ -421,55 +374,22 @@ public class RewardsManager implements OptionClickEventHandler {
     /**
      * 给玩家添加奖励<br>
      * 包括物品编辑器中的物品
-     * @param p 命令发出者,不为null
-     * @param tar 目标玩家,不为null
+     * @param tar 目标玩家,必须是存在的
      * @param money 钱,>=0
      * @param exp 经验,>=0
      * @param level 等级,>=0
+     * @param itemsHash 物品
      * @param tip 说明,可为null
+     * @return 是否添加成功
      */
-    private void give(Player p, String tar, int money, int exp, int level, String tip) {
-        //权限检测
-        if (!PerApi.checkPer(p, adminPer)) return;
-        //目标玩家存在性检测
-        tar = CoreApi.getRealName(p, tar);
-        if (tar == null) return;
+    public boolean give(String tar, int money, int exp, int level, Map<Integer, ItemStack> itemsHash, String tip) {
         //修正
         if (money < 0) money = 0;
         if (exp < 0) exp = 0;
         if (level < 0) level = 0;
         if (tip == null) tip = "";
-        //物品
-        Inventory result = Bukkit.createInventory(null, 36);
-        Inventory inv = ItemsApi.getInv(p.getName(), false);
-        if (inv != null) {
-            int index = 0;
-            for (int i=0;i<inv.getSize();i++) {
-                ItemStack is = inv.getItem(i);
-                if (is != null && !is.getType().equals(Material.AIR)) {
-                    result.setItem(index, is.clone());
-                    index ++;
-                    if (index > 35) break;
-                }
-            }
-        }
-        HashMap<Integer, ItemStack> itemsHash = new HashMap<>();
-        for (int i=0;i<36;i++) {
-            ItemStack is = result.getItem(i);
-            if (is != null && !is.getType().equals(Material.AIR)) itemsHash.put(i, is);
-        }
         //添加
-        if (addRewards(RewardsPlugin.pn, null, tar, money, exp, level, tip, itemsHash , true, false)) ShowApi.tip(p, get(685), true);
-        else ShowApi.tip(p, get(690), true);
-    }
-
-    /**
-     * 玩家请求获取指定类型的奖励
-     * @param p 玩家,不为null
-     * @param type 奖励类型,不为null
-     */
-    private void get(Player p, String type) {
-
+        return addRewards(RewardsPlugin.instance.pn, null, tar, money, exp, level, tip, itemsHash , true, false);
     }
 
     /**
@@ -482,7 +402,7 @@ public class RewardsManager implements OptionClickEventHandler {
         //检测初始化
         checkInit(name);
         //从缓存中删除
-        HashMap<String, RewardsUser> rewardsHash = userHash.get(name);
+        Map<String, RewardsUser> rewardsHash = userHash.get(name);
         RewardsUser user = rewardsHash.remove(type);
         if (user == null) return false;
         try {
@@ -491,7 +411,7 @@ public class RewardsManager implements OptionClickEventHandler {
             //do nothing
         }
         //添加更新
-        HashSet<RewardsUser> dels = needDeleteList.get(name);
+        Set<RewardsUser> dels = needDeleteList.get(name);
         if (dels == null) {
             dels = new HashSet<>();
             needDeleteList.put(name, dels);
@@ -511,7 +431,7 @@ public class RewardsManager implements OptionClickEventHandler {
         //检测初始化
         checkInit(tar);
         //获取
-        HashMap<String, RewardsUser> rewardsHash = userHash.get(tar);
+        Map<String, RewardsUser> rewardsHash = userHash.get(tar);
         int index = 1;
         while (rewardsHash.containsKey(plugin+"-"+index) || isInDelList(tar, plugin+"-"+index)) index ++;
         return plugin+"-"+index;
@@ -523,7 +443,7 @@ public class RewardsManager implements OptionClickEventHandler {
      * @param type 类型
      */
     private boolean isInDelList(String name, String type) {
-        HashSet<RewardsUser> dels = needDeleteList.get(name);
+        Set<RewardsUser> dels = needDeleteList.get(name);
         if (dels != null) {
             for (RewardsUser user:dels) {
                 if (user.getName().equals(name) && user.getType().equals(type)) return true;
@@ -565,7 +485,7 @@ public class RewardsManager implements OptionClickEventHandler {
      * @param tar 查看的目标玩家
      * @param page 页面
      */
-    private void delayShow(final Player p, final String tar, final int page) {
+    public void delayShow(final Player p, final String tar, final int page) {
         Bukkit.getScheduler().scheduleSyncDelayedTask(RewardsPlugin.instance, new Runnable() {
             @Override
             public void run() {
@@ -589,9 +509,18 @@ public class RewardsManager implements OptionClickEventHandler {
     }
 
     /**
+     * 获取玩家未领取的奖励数量
+     * @return >=0
+     */
+    public int getRewardsUserSize(String name) {
+        checkInit(name);
+        return userHash.get(name).size();
+    }
+
+    /**
      * @return 可能为null
      */
-    private RewardsUser getRewardsUser(String name, String type) {
+    public RewardsUser getRewardsUser(String name, String type) {
         checkInit(name);
         return userHash.get(name).get(type);
     }
@@ -604,9 +533,9 @@ public class RewardsManager implements OptionClickEventHandler {
             userHash.put(name, new HashMap<String, RewardsUser>());
             infoHash.put(name, new HashMap<String, Info>());
             //从数据库中读取玩家所有的RewardsUser
-            for (RewardsUser user:dao.getRewardsUsers(name)) {
+            for (RewardsUser user:RewardsPlugin.instance.getDaoManager().getRewardsUsers(name)) {
                 //解析
-                HashMap<Integer, ItemStack> itemHash = new HashMap<>();
+                Map<Integer, ItemStack> itemHash = new HashMap<>();
                 for (Map.Entry<Integer, String> entry:user.getItemsData().entrySet()) {
                     itemHash.put(entry.getKey(), ItemsApi.loadItem(entry.getValue()));
                 }
@@ -623,12 +552,12 @@ public class RewardsManager implements OptionClickEventHandler {
      */
     private void addToHash(RewardsUser rewardsUser) {
         //初始化
-        HashMap<String, RewardsUser> rewardsHash = userHash.get(rewardsUser.getName());
+        Map<String, RewardsUser> rewardsHash = userHash.get(rewardsUser.getName());
         if (rewardsHash == null) {
             rewardsHash = new HashMap<>();
             userHash.put(rewardsUser.getName(), rewardsHash);
         }
-        HashMap<String, Info> infHash = infoHash.get(rewardsUser.getName());
+        Map<String, Info> infHash = infoHash.get(rewardsUser.getName());
         if (infHash == null) {
             infHash = new HashMap<>();
             infoHash.put(rewardsUser.getName(), infHash);
@@ -650,28 +579,19 @@ public class RewardsManager implements OptionClickEventHandler {
     private void saveAll() {
         //删除
         if (!needDeleteList.isEmpty()) {
-            RewardsManager.dao.deletes(needDeleteList);
+            Set<RewardsUser> set = new HashSet<>();
+            for (Set<RewardsUser> s:needDeleteList.values()) set.addAll(s);
+            RewardsPlugin.instance.getDaoManager().deletes(set);
             needDeleteList.clear();
         }
         //保存
         if (!needUpdateList.isEmpty()) {
-            RewardsManager.dao.saveOrUpdates(needUpdateList);
+            RewardsPlugin.instance.getDaoManager().saveOrUpdates(needUpdateList);
             needUpdateList.clear();
         }
     }
 
-    private void initConfig() {
-        ConfigApi.register(RewardsPlugin.file, RewardsPlugin.dataPath, RewardsPlugin.pn);
-        ConfigApi.loadConfig(RewardsPlugin.pn);
-    }
-
     private void loadConfig() {
-        YamlConfiguration config = ConfigApi.getConfig(RewardsPlugin.pn);
-
-        adminPer = config.getString("per");
-        usePer = config.getString("usePer");
-        infoOtherPer = config.getString("infoOtherPer");
-
         tipRewards = config.getBoolean("tip");
 
         //物品显示
@@ -776,7 +696,7 @@ public class RewardsManager implements OptionClickEventHandler {
         TransactionApi.reloadTips(RewardsPlugin.pn);
     }
 
-    private static FancyMessage get(int id, Object... args) {
-        return FormatApi.get(RewardsPlugin.pn, id, args);
+    private FancyMessage get(String player, int id, Object... args) {
+        return langConfig.getLang().get(player, id, args);
     }
 }

@@ -1,5 +1,6 @@
 package com.fyxridd.lib.rewards.api;
 
+import com.fyxridd.lib.rewards.RewardsPlugin;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.HashMap;
@@ -10,7 +11,7 @@ public class RewardsApi {
      * 会读取插件数据文件夹下rewards.yml文件
      */
     public static void reloadRewards(String plugin) {
-        RewardsManager.instance.reloadRewards(plugin);
+        RewardsPlugin.instance.getRewardsManager().reloadRewards(plugin);
     }
 
     /**
@@ -28,7 +29,7 @@ public class RewardsApi {
      * @return 是否添加成功
      */
     public static boolean addRewards(String plugin, String type, String tar, int money, int exp, int level, String tip, HashMap<Integer, ItemStack> itemsHash, boolean force, boolean direct) {
-        return RewardsManager.instance.addRewards(plugin, type, tar, money, exp, level, tip, itemsHash, force, direct);
+        return RewardsPlugin.instance.getRewardsManager().addRewards(plugin, type, tar, money, exp, level, tip, itemsHash, force, direct);
     }
 
     /**
@@ -42,6 +43,6 @@ public class RewardsApi {
      * @return 是否添加成功
      */
     public static boolean addRewards(String tar, String plugin, String type, String show, boolean force, boolean direct) {
-        return RewardsManager.instance.addRewards(tar, plugin, type, show, force, direct);
+        return RewardsPlugin.instance.getRewardsManager().addRewards(tar, plugin, type, show, force, direct);
     }
 }
