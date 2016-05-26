@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.fyxridd.lib.rewards.mapper.RewardsUserMapper">
+    <select id="exist" resultType="java.lang.Boolean">
+        select count(*) from rewards_user where `name`=#{name} and `type`=#{type};
+    </select>
+
+    <select id="select" resultType="com.fyxridd.lib.rewards.model.RewardsUser">
+        select `name`,`type`,`money`,`exp`,`level`,`tip`,`itemsData` from rewards_user where `name`!="";
+    </select>
+
+    <insert id="insert">
+        insert into rewards_user(`name`,`type`,`money`,`exp`,`level`,`tip`,`itemsData`) values (#{name}, #{type}, #{money}, #{exp}, #{level}, #{tip}, #{itemsData});
+    </insert>
+
+    <update id="update">
+        update rewards_user set `money`=#{money},`exp`=#{exp},`level`=#{level},`tip`=#{tip},`itemsData`=#{itemsData} where `name`=#{name} and `type`=#{type};
+    </update>
+
+    <delete id="delete">
+        delete from rewards_user where `name`=#{name} and `type`=#{type};
+    </delete>
+</mapper>

@@ -162,5 +162,12 @@
             <version>[0.0.1,)</version>
             <scope>provided</scope>
         </dependency>
+        <!--LibNames-->
+        <dependency>
+            <groupId>com.fyxridd</groupId>
+            <artifactId>LibNames</artifactId>
+            <version>[0.0.1,)</version>
+            <scope>provided</scope>
+        </dependency>
     </dependencies>
 </project>

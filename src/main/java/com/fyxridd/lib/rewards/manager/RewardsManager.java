@@ -469,60 +469,7 @@ public class RewardsManager implements OptionClickEventHandler {
      * @param type 奖励类型,不为null
      */
     private void get(Player p, String type) {
-        String name = p.getName();
-        //检测初始化
-        checkInit(p.getName());
-        //奖励类型不存在
-        HashMap<String, RewardsUser> rewardsHash = userHash.get(name);
-        RewardsUser rewardsInfo = rewardsHash.get(type);
-        if (rewardsInfo == null) {
-            ShowApi.tip(p, get(635), true);
-            return;
-        }
-        int money = rewardsInfo.getMoney();
-        int exp = rewardsInfo.getExp();
-        int level = rewardsInfo.getLevel();
-        HashMap<Integer, ItemStack> itemsHash = rewardsInfo.getItemsHash();
-        //背包空格检测
-        PlayerInventory inv = p.getInventory();
-        int emptySlots = ItemApi.getEmptySlots(inv);
-        //背包空格不够
-        if (emptySlots < itemsHash.size()) {
-            ShowApi.tip(p, get(50, itemsHash.size()), true);
-            return;
-        }
-        //成功
-        //退出界面
-        ShowApi.exit(p, false);
-        //删除
-        remove(name, type);
-        //money
-        if (money > 0) {
-            EcoApi.add(p.getName(), money);
-            ShowApi.tip(p, get(55, money), false);
-        }
-        //exp
-        if (exp > 0) {
-            p.giveExp(exp);
-            ShowApi.tip(p, get(60, exp), false);
-        }
-        //level
-        if (level > 0) {
-            p.giveExpLevels(level);
-            ShowApi.tip(p, get(65, level), false);
-        }
-        //item
-        for (int i:itemsHash.keySet()) {
-            ItemStack is = itemsHash.get(i);
-            inv.addItem(is);
-            ShowApi.tip(p, get(70, is.getAmount(), NamesApi.getItemName(is)), false);
-        }
-        //更新背包
-        p.updateInventory();
-        //tip
-        ShowApi.tip(p, get(640), false);
-        //检测显示下个列表
-        if (rewardsHash.size() > 0) delayShow(p, name, 1);
+
     }
 
     /**
