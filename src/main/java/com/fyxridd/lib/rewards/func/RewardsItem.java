@@ -149,33 +149,21 @@ public class RewardsItem implements OptionClickEventHandler{
             int cmd = e.getPos()-info.getInv().getSize();
             if (cmd >= 0) {
                 Player p = e.getP();
+                Inventory inv = info.getInv(p);
+                int size = info.getInv().getSize();
+                ItemStack infoItem = inv.getItem(size);
+                String tar = infoItem.getItemMeta().getDisplayName().substring(itemConfig.getInfoOwner().length());
+                String type = infoItem.getItemMeta().getLore().get(0).substring(itemConfig.getInfoName().length());
                 if (cmd == itemConfig.getPrePos()) {
-                    Inventory inv = info.getInv(p);
-                    int size = info.getInv().getSize();
-                    ItemStack infoItem = inv.getItem(size);
-                    String tar = infoItem.getItemMeta().getDisplayName().substring(itemConfig.getInfoOwner().length());
-                    int page = infoItem.getAmount()-1;
-                    RewardsPlugin.instance.getRewardsManager().delayShow(p, tar, page);
-                    e.setWillClose(true);
-                }else if (cmd == itemConfig.getGetPos()) {
-                    Inventory inv = info.getInv(p);
-                    int size = info.getInv().getSize();
-                    ItemStack infoItem = inv.getItem(size);
-                    String type = infoItem.getItemMeta().getLore().get(0).substring(itemConfig.getInfoName().length());
-                    RewardsPlugin.instance.getRewardsManager().delayGet(p, type);
+                    RewardsPlugin.instance.getRewardsManager().delayShow(p, tar, infoItem.getAmount()-1);
                     e.setWillClose(true);
                 }else if (cmd == itemConfig.getNextPos()) {
-                    Inventory inv = info.getInv(p);
-                    int size = info.getInv().getSize();
-                    ItemStack infoItem = inv.getItem(size);
-                    String tar = infoItem.getItemMeta().getDisplayName().substring(itemConfig.getInfoOwner().length());
-                    int page = infoItem.getAmount()+1;
-                    RewardsPlugin.instance.getRewardsManager().delayShow(p, tar, page);
+                    RewardsPlugin.instance.getRewardsManager().delayShow(p, tar, infoItem.getAmount()+1);
+                    e.setWillClose(true);
+                }else if (cmd == itemConfig.getGetPos()) {
+                    RewardsPlugin.instance.getRewardsManager().delayGet(p, type);
                     e.setWillClose(true);
                 }else if (cmd == itemConfig.getDelPos()) {
-                    ItemStack infoItem = info.getInv(p).getItem(info.getInv().getSize());
-                    String tar = infoItem.getItemMeta().getDisplayName().substring(itemConfig.getInfoOwner().length());
-                    String type = infoItem.getItemMeta().getLore().get(0).substring(itemConfig.getInfoName().length());
                     FuncApi.onFunc(p, com.fyxridd.lib.show.cmd.api.ShowApi.CMD, RewardsPlugin.instance.pn, RewardsCmd.DELETE, tar+" "+type);
                     e.setWillClose(true);
                 }

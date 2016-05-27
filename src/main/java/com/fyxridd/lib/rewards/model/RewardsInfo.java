@@ -1,12 +1,17 @@
 package com.fyxridd.lib.rewards.model;
 
+import com.fyxridd.lib.core.api.getter.MultiRandomInt;
+
 public class RewardsInfo {
     private String plugin;
     private String type;
 
-    private int minMoney, maxMoney;
-    private int minExp, maxExp;
-    private int minLevel, maxLevel;
+    //可为null
+    private MultiRandomInt money;
+    //可为null
+    private MultiRandomInt exp;
+    //可为null
+    private MultiRandomInt level;
 
     private String itemsPlugin, itemsGetType;
     private String enchantsPlugin, enchantsType;
@@ -14,21 +19,18 @@ public class RewardsInfo {
     private String tip;
 
     public RewardsInfo(String plugin, String type,
-                       int minMoney, int maxMoney,
-                       int minExp, int maxExp,
-                       int minLevel, int maxLevel,
+                       MultiRandomInt money,
+                       MultiRandomInt exp,
+                       MultiRandomInt level,
                        String itemsPlugin, String itemsGetType,
                        String enchantsPlugin, String enchantsType,
                        String tip) {
         super();
         this.plugin = plugin;
         this.type = type;
-        this.minMoney = minMoney;
-        this.maxMoney = maxMoney;
-        this.minExp = minExp;
-        this.maxExp = maxExp;
-        this.minLevel = minLevel;
-        this.maxLevel = maxLevel;
+        this.money = money;
+        this.exp = exp;
+        this.level = level;
         this.tip = tip;
         this.itemsPlugin = itemsPlugin;
         this.itemsGetType = itemsGetType;
@@ -44,28 +46,16 @@ public class RewardsInfo {
         return type;
     }
 
-    public int getMinMoney() {
-        return minMoney;
+    public MultiRandomInt getMoney() {
+        return money;
     }
 
-    public int getMaxMoney() {
-        return maxMoney;
+    public MultiRandomInt getExp() {
+        return exp;
     }
 
-    public int getMinExp() {
-        return minExp;
-    }
-
-    public int getMaxExp() {
-        return maxExp;
-    }
-
-    public int getMinLevel() {
-        return minLevel;
-    }
-
-    public int getMaxLevel() {
-        return maxLevel;
+    public MultiRandomInt getLevel() {
+        return level;
     }
 
     public String getItemsPlugin() {

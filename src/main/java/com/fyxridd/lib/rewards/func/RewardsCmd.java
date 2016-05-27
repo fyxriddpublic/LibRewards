@@ -78,8 +78,6 @@ public class RewardsCmd {
             return;
         }
         //成功
-        //退出界面
-        ShowApi.exit(p, false);
         //删除
         RewardsPlugin.instance.getRewardsManager().remove(name, type);
         //money

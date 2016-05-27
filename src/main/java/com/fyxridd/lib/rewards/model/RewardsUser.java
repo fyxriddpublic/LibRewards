@@ -23,7 +23,7 @@ public class RewardsUser implements Serializable{
     //临时,不保存到数据库
 
     //可为空列表不为null
-    private Map<Integer,ItemStack> itemsHash;
+    private Map<Integer, ItemStack> itemsHash;
 
     public RewardsUser(){}
 

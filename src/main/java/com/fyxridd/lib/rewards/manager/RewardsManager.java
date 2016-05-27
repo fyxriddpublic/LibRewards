@@ -4,6 +4,7 @@ import com.fyxridd.lib.core.api.*;
 import com.fyxridd.lib.core.api.config.ConfigApi;
 import com.fyxridd.lib.core.api.config.Setter;
 import com.fyxridd.lib.core.api.fancymessage.FancyMessage;
+import com.fyxridd.lib.core.api.getter.MultiRandomInt;
 import com.fyxridd.lib.core.realname.NotReadyException;
 import com.fyxridd.lib.enchants.api.EnchantsApi;
 import com.fyxridd.lib.func.api.FuncApi;
@@ -114,36 +115,23 @@ public class RewardsManager {
 
         for (String type : config.getValues(false).keySet()) {
             MemorySection ms = (MemorySection) config.get(type);
-            String str;
-            //minMoney,maxMoney
-            int minMoney, maxMoney;
-            str = ms.getString("money");
-            if (str == null || str.isEmpty()) {
-                minMoney = 0;
-                maxMoney = 0;
-            }else {
-                minMoney = Integer.parseInt(str.split("\\-")[0]);
-                maxMoney = Integer.parseInt(str.split("\\-")[1]);
+            //money
+            MultiRandomInt money = null;
+            {
+                String str = ms.getString("money");
+                if (str != null && !str.isEmpty()) money = new MultiRandomInt(str);
             }
-            //minExp,maxExp
-            int minExp, maxExp;
-            str = ms.getString("exp");
-            if (str == null || str.isEmpty()) {
-                minExp = 0;
-                maxExp = 0;
-            }else {
-                minExp = Integer.parseInt(str.split("\\-")[0]);
-                maxExp = Integer.parseInt(str.split("\\-")[1]);
+            //exp
+            MultiRandomInt exp = null;
+            {
+                String str = ms.getString("exp");
+                if (str != null && !str.isEmpty()) exp = new MultiRandomInt(str);
             }
-            //minLevel,maxLevel
-            int minLevel, maxLevel;
-            str = ms.getString("level");
-            if (str == null || str.isEmpty()) {
-                minLevel = 0;
-                maxLevel = 0;
-            }else {
-                minLevel = Integer.parseInt(str.split("\\-")[0]);
-                maxLevel = Integer.parseInt(str.split("\\-")[1]);
+            //level
+            MultiRandomInt level = null;
+            {
+                String str = ms.getString("level");
+                if (str != null && !str.isEmpty()) level = new MultiRandomInt(str);
             }
             //items
             String s = ms.getString("itemsType");
@@ -180,7 +168,7 @@ public class RewardsManager {
             //tip
             String tip = ms.getString("tip");
             //添加
-            map.put(type, new RewardsInfo(plugin, type, minMoney, maxMoney, minExp, maxExp, minLevel, maxLevel, itemsPlugin, itemsGetType, enchantsPlugin, enchantsType, tip));
+            map.put(type, new RewardsInfo(plugin, type, money, exp, level, itemsPlugin, itemsGetType, enchantsPlugin, enchantsType, tip));
         }
     }
 
@@ -268,10 +256,11 @@ public class RewardsManager {
                 itemsHash.put(index, is);
             }
         }
+        int money = info.getMoney() != null?info.getMoney().get(0):0;
+        int exp = info.getExp() != null?info.getExp().get(0):0;
+        int level = info.getLevel() != null?info.getLevel().get(0):0;
         return addRewards(plugin, show, tar,
-                MathApi.nextInt(0, info.getMaxMoney()-info.getMinMoney())+info.getMinMoney(),
-                MathApi.nextInt(0, info.getMaxExp()-info.getMinExp())+info.getMinExp(),
-                MathApi.nextInt(0, info.getMaxLevel()-info.getMinLevel())+info.getMinLevel(),
+                money, exp, level,
                 info.getTip(), itemsHash, force, direct);
     }
 
