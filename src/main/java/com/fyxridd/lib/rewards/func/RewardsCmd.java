@@ -1,9 +1,6 @@
 package com.fyxridd.lib.rewards.func;
 
-import com.fyxridd.lib.core.api.ItemApi;
-import com.fyxridd.lib.core.api.MessageApi;
-import com.fyxridd.lib.core.api.PerApi;
-import com.fyxridd.lib.core.api.PlayerApi;
+import com.fyxridd.lib.core.api.*;
 import com.fyxridd.lib.core.api.config.ConfigApi;
 import com.fyxridd.lib.core.api.config.Setter;
 import com.fyxridd.lib.core.api.fancymessage.FancyMessage;
@@ -30,6 +27,11 @@ import java.util.Map;
 
 @FuncType("cmd")
 public class RewardsCmd {
+    public static final String GET = "get";
+    public static final String ADD = "add";
+    public static final String GIVE = "give";
+    public static final String DELETE = "delete";
+
     private LangConfig langConfig;
     private RewardsConfig rewardsConfig;
     
@@ -52,7 +54,7 @@ public class RewardsCmd {
     /**
      * 领取奖励
      */
-    @Func("get")
+    @Func(GET)
     public void get(CommandSender sender, String type) {
         if (!(sender instanceof Player)) return;
         Player p = (Player) sender;
@@ -112,7 +114,7 @@ public class RewardsCmd {
     /**
      * 给目标玩家添加奖励
      */
-    @Func("add")
+    @Func(ADD)
     public void add(CommandSender sender, String tar, String plugin, String type) {
         Player p = null;
         if (sender instanceof Player) p = (Player) sender;
@@ -136,7 +138,7 @@ public class RewardsCmd {
      * 给目标玩家发奖励
      * (如果发出者是玩家,则还包括物品编辑器中的物品;否则物品为空)
      */
-    @Func("give")
+    @Func(GIVE)
     public void give(CommandSender sender, String tar, int money, int exp, int level, @Default("") @Extend String tip) {
         Player p = null;
         if (sender instanceof Player) p = (Player) sender;
@@ -165,13 +167,13 @@ public class RewardsCmd {
             }
         }
         //添加
-        RewardsPlugin.instance.getRewardsManager().give(tar, money, exp, level, itemsHash, tip);
+        RewardsPlugin.instance.getRewardsManager().addRewards(RewardsPlugin.instance.pn, null, tar, money, exp, level, tip, itemsHash, true, false);
     }
 
     /**
      * 删除目标玩家的奖励
      */
-    @Func("delete")
+    @Func(DELETE)
     public void delete(CommandSender sender, String tar, String type) {
         Player p = null;
         if (sender instanceof Player) p = (Player) sender;

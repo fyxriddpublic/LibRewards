@@ -10,12 +10,14 @@ adminPer: "lib.rewards.admin"     #奖励管理权限
 usePer: "lib.rewards.use"
 infoOtherPer: "lib.rewards.infoOther"
 
-tip: true                     #玩家上线如果有未领取奖励是否提示
-showRewards:                  #奖励显示(前4行显示奖励物品,后1行显示功能)
+tipRewards: true                     #玩家上线如果有未领取奖励是否提示
+#################################
+#####       物品配置        #####
+#################################
+item:                   #奖励显示(前4行显示奖励物品,后1行显示功能)
   info:
     pos: 0                    #界面中的位置
     item: 340
-    smallId: 0
     owner: "&6玩家: &3"
     name: "&6奖励名: &5"
     gold: "&6金币: &5"

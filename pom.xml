@@ -148,6 +148,13 @@
             <version>[0.0.1,)</version>
             <scope>provided</scope>
         </dependency>
+        <!--LibCmdShow-->
+        <dependency>
+            <groupId>com.fyxridd</groupId>
+            <artifactId>LibCmdShow</artifactId>
+            <version>[0.0.1,)</version>
+            <scope>provided</scope>
+        </dependency>
         <!--LibItemShow-->
         <dependency>
             <groupId>com.fyxridd</groupId>

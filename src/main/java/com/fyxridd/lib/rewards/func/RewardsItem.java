@@ -7,14 +7,18 @@ import com.fyxridd.lib.core.api.config.ConfigApi;
 import com.fyxridd.lib.core.api.config.Setter;
 import com.fyxridd.lib.core.api.fancymessage.FancyMessage;
 import com.fyxridd.lib.core.realname.NotReadyException;
+import com.fyxridd.lib.func.api.FuncApi;
 import com.fyxridd.lib.func.api.func.Default;
 import com.fyxridd.lib.func.api.func.Func;
 import com.fyxridd.lib.func.api.func.FuncType;
 import com.fyxridd.lib.rewards.RewardsPlugin;
+import com.fyxridd.lib.rewards.config.ItemConfig;
 import com.fyxridd.lib.rewards.config.LangConfig;
 import com.fyxridd.lib.rewards.config.RewardsConfig;
 import com.fyxridd.lib.rewards.model.RewardsUser;
 import com.fyxridd.lib.show.item.api.Info;
+import com.fyxridd.lib.show.item.api.OptionClickEvent;
+import com.fyxridd.lib.show.item.api.OptionClickEventHandler;
 import com.fyxridd.lib.show.item.api.ShowApi;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
@@ -27,10 +31,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 @FuncType("item")
-public class RewardsItem {
+public class RewardsItem implements OptionClickEventHandler{
     private LangConfig langConfig;
     private RewardsConfig rewardsConfig;
-    
+    private ItemConfig itemConfig;
+
     public RewardsItem() {
         //添加配置监听
         ConfigApi.addListener(RewardsPlugin.instance.pn, LangConfig.class, new Setter<LangConfig>() {
@@ -43,6 +48,12 @@ public class RewardsItem {
             @Override
             public void set(RewardsConfig value) {
                 rewardsConfig = value;
+            }
+        });
+        ConfigApi.addListener(RewardsPlugin.instance.pn, ItemConfig.class, new Setter<ItemConfig>() {
+            @Override
+            public void set(ItemConfig value) {
+                itemConfig = value;
             }
         });
     }
@@ -75,60 +86,105 @@ public class RewardsItem {
             MessageApi.send(p, get(p.getName(), 705, maxPage), true);
             return;
         }
-        Info info = getInfo(page-1, infHash);
-        if (info != null) {
-            String type = getKey(info, infHash);
-            if (type == null) return;//异常
-            try {
-                RewardsUser ru = RewardsPlugin.instance.getRewardsManager().getRewardsUser(tar, type)
+        String type = RewardsPlugin.instance.getRewardsManager().getType(tar, page-1);
+        if (type != null) {
+            Info info = RewardsPlugin.instance.getRewardsManager().getInfo(tar, type);
+            if (info != null) {
+                try {
+                    RewardsUser ru = RewardsPlugin.instance.getRewardsManager().getRewardsUser(tar, type);
 
-                //创建操作栏
-                Inventory inv = Bukkit.createInventory(p, 9, "none");
+                    //创建操作栏
+                    Inventory inv = Bukkit.createInventory(p, 9, "none");
 
-                //提示物品
-                ItemStack infoItem = new ItemStack(instance.infoItem, page, (short)instance.infoItemSmallId);
-                ItemMeta im = infoItem.getItemMeta();
-                im.setDisplayName(infoOwner+tar);
-                List<String> lore = new ArrayList<>();
-                lore.add(infoName+type);
-                lore.add(infoGold+ru.getMoney());
-                lore.add(infoExp+ru.getExp());
-                lore.add(infoLevel+ru.getLevel());
-                lore.add(infoTip+ru.getTip());
-                im.setLore(lore);
-                infoItem.setItemMeta(im);
-                inv.setItem(infoPos, infoItem);
+                    //提示物品
+                    ItemStack infoItem = itemConfig.getInfo().clone();
+                    ItemMeta im = infoItem.getItemMeta();
+                    im.setDisplayName(itemConfig.getInfoOwner()+tar);
+                    List<String> lore = new ArrayList<>();
+                    lore.add(itemConfig.getInfoName()+type);
+                    lore.add(itemConfig.getInfoGold()+ru.getMoney());
+                    lore.add(itemConfig.getInfoExp()+ru.getExp());
+                    lore.add(itemConfig.getInfoLevel()+ru.getLevel());
+                    lore.add(itemConfig.getInfoTip()+ru.getTip());
+                    im.setLore(lore);
+                    infoItem.setItemMeta(im);
+                    inv.setItem(itemConfig.getInfoPos(), infoItem);
 
-                //前一页
-                if (page > 1) {
-                    ItemStack preItem = pre.clone();
-                    inv.setItem(prePos, preItem);
+                    //前一页
+                    if (page > 1) {
+                        ItemStack preItem = itemConfig.getPre().clone();
+                        inv.setItem(itemConfig.getPrePos(), preItem);
+                    }
+
+                    //获取奖励
+                    if (tar.equals(p.getName())) {
+                        ItemStack getItem = itemConfig.getGet().clone();
+                        inv.setItem(itemConfig.getGetPos(), getItem);
+                    }
+
+                    //后一页
+                    if (page < maxPage) {
+                        ItemStack nextItem = itemConfig.getNext().clone();
+                        inv.setItem(itemConfig.getNextPos(), nextItem);
+                    }
+
+                    //删除奖励
+                    if (PerApi.has(p.getName(), rewardsConfig.getAdminPer())) {
+                        ItemStack delItem = itemConfig.getDel().clone();
+                        inv.setItem(itemConfig.getDelPos(), delItem);
+                    }
+
+                    ShowApi.open(p, info, null, inv);
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
-
-                //获取奖励
-                if (tar.equals(p.getName())) {
-                    ItemStack getItem = get.clone();
-                    inv.setItem(getPos, getItem);
-                }
-
-                //后一页
-                if (page < maxPage) {
-                    ItemStack nextItem = next.clone();
-                    inv.setItem(nextPos, nextItem);
-                }
-
-                //删除奖励
-                if (PerApi.has(p, adminPer)) {
-                    ItemStack delItem = del.clone();
-                    inv.setItem(delPos, delItem);
-                }
-
-                ShowApi.open(p, info, null, inv);
-            } catch (Exception e) {
             }
         }
     }
-    
+
+    @Override
+    public void onOptionClick(OptionClickEvent e) {
+        try {
+            Info info = e.getInfo();
+            int cmd = e.getPos()-info.getInv().getSize();
+            if (cmd >= 0) {
+                Player p = e.getP();
+                if (cmd == itemConfig.getPrePos()) {
+                    Inventory inv = info.getInv(p);
+                    int size = info.getInv().getSize();
+                    ItemStack infoItem = inv.getItem(size);
+                    String tar = infoItem.getItemMeta().getDisplayName().substring(itemConfig.getInfoOwner().length());
+                    int page = infoItem.getAmount()-1;
+                    RewardsPlugin.instance.getRewardsManager().delayShow(p, tar, page);
+                    e.setWillClose(true);
+                }else if (cmd == itemConfig.getGetPos()) {
+                    Inventory inv = info.getInv(p);
+                    int size = info.getInv().getSize();
+                    ItemStack infoItem = inv.getItem(size);
+                    String type = infoItem.getItemMeta().getLore().get(0).substring(itemConfig.getInfoName().length());
+                    RewardsPlugin.instance.getRewardsManager().delayGet(p, type);
+                    e.setWillClose(true);
+                }else if (cmd == itemConfig.getNextPos()) {
+                    Inventory inv = info.getInv(p);
+                    int size = info.getInv().getSize();
+                    ItemStack infoItem = inv.getItem(size);
+                    String tar = infoItem.getItemMeta().getDisplayName().substring(itemConfig.getInfoOwner().length());
+                    int page = infoItem.getAmount()+1;
+                    RewardsPlugin.instance.getRewardsManager().delayShow(p, tar, page);
+                    e.setWillClose(true);
+                }else if (cmd == itemConfig.getDelPos()) {
+                    ItemStack infoItem = info.getInv(p).getItem(info.getInv().getSize());
+                    String tar = infoItem.getItemMeta().getDisplayName().substring(itemConfig.getInfoOwner().length());
+                    String type = infoItem.getItemMeta().getLore().get(0).substring(itemConfig.getInfoName().length());
+                    FuncApi.onFunc(p, com.fyxridd.lib.show.cmd.api.ShowApi.CMD, RewardsPlugin.instance.pn, RewardsCmd.DELETE, tar+" "+type);
+                    e.setWillClose(true);
+                }
+            }
+        } catch (Exception e1) {
+            //do nothing
+        }
+    }
+
     private FancyMessage get(String player, int id, Object... args) {
         return langConfig.getLang().get(player, id, args);
     }

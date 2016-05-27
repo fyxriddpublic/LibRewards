@@ -12,6 +12,9 @@ public class RewardsConfig {
     @Path("infoOtherPer")
     private String infoOtherPer;
 
+    @Path("tipRewards")
+    private boolean tipRewards;
+
     public String getAdminPer() {
         return adminPer;
     }
@@ -22,5 +25,9 @@ public class RewardsConfig {
 
     public String getInfoOtherPer() {
         return infoOtherPer;
+    }
+
+    public boolean isTipRewards() {
+        return tipRewards;
     }
 }

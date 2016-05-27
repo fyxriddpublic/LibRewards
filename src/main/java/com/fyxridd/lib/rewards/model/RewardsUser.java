@@ -37,7 +37,7 @@ public class RewardsUser implements Serializable{
         this.level = level;
         this.tip = tip;
         this.itemsHash = itemsHash;
-        updateItems();
+        updateItemsHashToItemsData();
     }
 
     public String getName() {
@@ -94,6 +94,7 @@ public class RewardsUser implements Serializable{
 
     public void setItemsData(Map<Integer, String> itemsData) {
         this.itemsData = itemsData;
+        updateItemsDataToItemsHash();
     }
 
     public Map<Integer, ItemStack> getItemsHash() {
@@ -102,13 +103,22 @@ public class RewardsUser implements Serializable{
 
     public void setItemsHash(Map<Integer, ItemStack> itemsHash) {
         this.itemsHash = itemsHash;
+        updateItemsHashToItemsData();
     }
 
     /**
      * 根据itemsHash更新itemsData
      */
-    public void updateItems() {
+    private void updateItemsHashToItemsData() {
         this.itemsData = new HashMap<>();
         for (Map.Entry<Integer, ItemStack> entry:itemsHash.entrySet()) itemsData.put(entry.getKey(), ItemsApi.saveItem(entry.getValue()));
+    }
+
+    /**
+     * 根据itemsData更新itemsHash
+     */
+    private void updateItemsDataToItemsHash() {
+        itemsHash = new HashMap<>();
+        for (Map.Entry<Integer, String> entry:itemsData.entrySet()) itemsHash.put(entry.getKey(), ItemsApi.loadItem(entry.getValue()));
     }
 }
