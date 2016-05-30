@@ -13,7 +13,7 @@ import java.util.List;
 
 @Path("item")
 public class ItemConfig {
-    private class ItemConverter implements ConfigConvert.ConfigConverter<ItemStack> {
+    private static class ItemConverter implements ConfigConvert.ConfigConverter<ItemStack> {
         @Override
         public ItemStack convert(String plugin, ConfigurationSection config) throws Exception {
             //item
