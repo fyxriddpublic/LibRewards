@@ -1,4 +1,4 @@
 ﻿name: LibRewards
 main: com.fyxridd.lib.rewards.RewardsPlugin
 version: 0.1.0
-depend: [LibCore, LibFunc, LibItems, LibEnchants, LibCmdShow, LibItemShow, LibSql, LibNames]
+depend: [LibCore, LibFunc, LibItems, LibEnchants, LibCmdShow, LibItemShow, LibNames]

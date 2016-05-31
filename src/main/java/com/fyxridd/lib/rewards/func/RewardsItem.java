@@ -6,7 +6,7 @@ import com.fyxridd.lib.core.api.PlayerApi;
 import com.fyxridd.lib.core.api.config.ConfigApi;
 import com.fyxridd.lib.core.api.config.Setter;
 import com.fyxridd.lib.core.api.fancymessage.FancyMessage;
-import com.fyxridd.lib.core.realname.NotReadyException;
+import com.fyxridd.lib.core.api.exception.NotReadyException;
 import com.fyxridd.lib.func.api.FuncApi;
 import com.fyxridd.lib.func.api.func.Default;
 import com.fyxridd.lib.func.api.func.Func;

@@ -13,9 +13,9 @@ public interface RewardsUserMapper {
 
     List<RewardsUser> selectAll(@Param("name") String name);
 
-    void insert(@Param("user") RewardsUser user);
+    void insert(RewardsUser user);
 
-    void update(@Param("user") RewardsUser user);
+    void update(RewardsUser user);
 
-    void delete(@Param("user") RewardsUser user);
+    void delete(RewardsUser user);
 }
