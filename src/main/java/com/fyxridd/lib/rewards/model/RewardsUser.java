@@ -11,12 +11,12 @@ public class RewardsUser implements Serializable{
     private static final long serialVersionUID = 1L;
     
     private String name;
-    private String type;
+    private String type;//不为null
 
     private int money;
     private int exp;
     private int level;
-    private String tip;
+    private String tip;//不为null
     //可为空列表不为null
     private Map<Integer, String> itemsData;
 

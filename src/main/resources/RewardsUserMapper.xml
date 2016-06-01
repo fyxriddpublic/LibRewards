@@ -6,7 +6,7 @@
     </select>
 
     <select id="selectAll" resultType="com.fyxridd.lib.rewards.model.RewardsUser">
-        select `name`,`type`,`money`,`exp`,`level`,`tip`,`itemsData` from rewards_user where `name`=${name};
+        select `name`,`type`,`money`,`exp`,`level`,`tip`,`itemsData` from rewards_user where `name`=#{name};
     </select>
 
     <insert id="insert">
