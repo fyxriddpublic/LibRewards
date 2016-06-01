@@ -6,7 +6,6 @@ import com.fyxridd.lib.core.api.PlayerApi;
 import com.fyxridd.lib.core.api.config.ConfigApi;
 import com.fyxridd.lib.core.api.config.Setter;
 import com.fyxridd.lib.core.api.fancymessage.FancyMessage;
-import com.fyxridd.lib.core.api.exception.NotReadyException;
 import com.fyxridd.lib.func.api.FuncApi;
 import com.fyxridd.lib.func.api.func.Default;
 import com.fyxridd.lib.func.api.func.Func;
@@ -67,11 +66,7 @@ public class RewardsItem implements OptionClickEventHandler{
         Player p = (Player) sender;
         
         //目标玩家存在性检测
-        try {
-            tar = PlayerApi.getRealName(p, tar);
-        } catch (NotReadyException e) {
-            return;
-        }
+        tar = PlayerApi.getRealName(p, tar);
         if (tar == null) return;
         //查看其它玩家奖励列表权限检测
         if (!p.getName().equals(tar) && !PerApi.checkHasPer(p.getName(), rewardsConfig.getInfoOtherPer())) return;

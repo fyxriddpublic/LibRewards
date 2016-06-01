@@ -4,7 +4,6 @@ import com.fyxridd.lib.core.api.*;
 import com.fyxridd.lib.core.api.config.ConfigApi;
 import com.fyxridd.lib.core.api.config.Setter;
 import com.fyxridd.lib.core.api.fancymessage.FancyMessage;
-import com.fyxridd.lib.core.api.exception.NotReadyException;
 import com.fyxridd.lib.func.api.func.Default;
 import com.fyxridd.lib.func.api.func.Extend;
 import com.fyxridd.lib.func.api.func.Func;
@@ -121,11 +120,7 @@ public class RewardsCmd {
         //权限检测
         if (p != null && !PerApi.checkHasPer(name, rewardsConfig.getAdminPer())) return;
         //目标玩家存在性检测
-        try {
-            tar = PlayerApi.getRealName(p, tar);
-        } catch (NotReadyException e) {
-            return;
-        }
+        tar = PlayerApi.getRealName(p, tar);
         if (tar == null) return;
         //添加
         if (RewardsPlugin.instance.getRewardsManager().addRewards(tar, plugin, type, null, true, false)) MessageApi.send(sender, get(name, 685), true);
@@ -143,11 +138,7 @@ public class RewardsCmd {
         //权限检测
         if (p != null && !PerApi.checkHasPer(p.getName(), rewardsConfig.getAdminPer())) return;
         //目标玩家存在性检测
-        try {
-            tar = PlayerApi.getRealName(p, tar);
-        } catch (NotReadyException e) {
-            return;
-        }
+        tar = PlayerApi.getRealName(p, tar);
         if (tar == null) return;
         //物品
         Map<Integer, ItemStack> itemsHash = new HashMap<>();
@@ -180,11 +171,7 @@ public class RewardsCmd {
         //权限检测
         if (p != null && !PerApi.checkHasPer(name, rewardsConfig.getAdminPer())) return;
         //目标玩家存在性检测
-        try {
-            tar = PlayerApi.getRealName(p, tar);
-        } catch (NotReadyException e) {
-            return;
-        }
+        tar = PlayerApi.getRealName(p, tar);
         if (tar == null) return;
         //移除
         if (RewardsPlugin.instance.getRewardsManager().remove(tar, type)) MessageApi.send(sender, get(name, 665), true);

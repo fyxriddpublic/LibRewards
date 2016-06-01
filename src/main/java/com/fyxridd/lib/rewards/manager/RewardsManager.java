@@ -5,7 +5,6 @@ import com.fyxridd.lib.core.api.config.ConfigApi;
 import com.fyxridd.lib.core.api.config.Setter;
 import com.fyxridd.lib.core.api.fancymessage.FancyMessage;
 import com.fyxridd.lib.core.api.getter.MultiRandomInt;
-import com.fyxridd.lib.core.api.exception.NotReadyException;
 import com.fyxridd.lib.enchants.api.EnchantsApi;
 import com.fyxridd.lib.func.api.FuncApi;
 import com.fyxridd.lib.items.api.ItemsApi;
@@ -86,18 +85,23 @@ public class RewardsManager {
             Bukkit.getPluginManager().registerEvent(PluginDisableEvent.class, RewardsPlugin.instance, EventPriority.NORMAL, new EventExecutor() {
                 @Override
                 public void execute(Listener listener, Event e) throws EventException {
-                    saveAll();
+                    if (e instanceof PluginDisableEvent) {
+                        PluginDisableEvent event = (PluginDisableEvent) e;
+                        if (event.getPlugin().getName().equals(RewardsPlugin.instance.pn)) saveAll();
+                    }
                 }
             }, RewardsPlugin.instance);
             //玩家加入
             Bukkit.getPluginManager().registerEvent(PlayerJoinEvent.class, RewardsPlugin.instance, EventPriority.LOWEST, new EventExecutor() {
                 @Override
                 public void execute(Listener listener, Event e) throws EventException {
-                    PlayerJoinEvent event = (PlayerJoinEvent) e;
-                    //检测初始化
-                    checkInit(event.getPlayer().getName());
-                    //提示领取奖励
-                    if (rewardsConfig.isTipRewards() && getRewardsUserSize(event.getPlayer().getName()) > 0) MessageApi.send(event.getPlayer(), get(event.getPlayer().getName(), 660), true);
+                    if (e instanceof PlayerJoinEvent) {
+                        PlayerJoinEvent event = (PlayerJoinEvent) e;
+                        //检测初始化
+                        checkInit(event.getPlayer().getName());
+                        //提示领取奖励
+                        if (rewardsConfig.isTipRewards() && getRewardsUserSize(event.getPlayer().getName()) > 0) MessageApi.send(event.getPlayer(), get(event.getPlayer().getName(), 660), true);
+                    }
                 }
             }, RewardsPlugin.instance);
         }
@@ -235,11 +239,7 @@ public class RewardsManager {
         if (tar == null || type == null) return false;
         if (plugin == null) plugin = RewardsPlugin.instance.pn;
         //目标玩家存在性检测
-        try {
-            tar = PlayerApi.getRealName(null, tar);
-        } catch (NotReadyException e) {
-            return false;
-        }
+        tar = PlayerApi.getRealName(null, tar);
         if (tar == null) return false;
         //获取奖励信息
         RewardsInfo info = getRewardsInfo(plugin, type);
@@ -268,11 +268,7 @@ public class RewardsManager {
      * @see com.fyxridd.lib.rewards.api.RewardsApi#addRewards(String, String, String, int, int, int, String, java.util.HashMap, boolean, boolean)
      */
     public boolean addRewards(String plugin, String type, String tar, int money, int exp, int level, String tip, Map<Integer, ItemStack> itemsHash, boolean force, boolean direct) {
-        try {
-            if (tar == null || money < 0 || exp < 0 || level < 0 || PlayerApi.getRealName(null, tar) == null) return false;
-        } catch (NotReadyException e) {
-            return false;
-        }
+        if (tar == null || money < 0 || exp < 0 || level < 0 || PlayerApi.getRealName(null, tar) == null) return false;
         //修正
         if (plugin == null) plugin = RewardsPlugin.instance.pn;
         if (money < 0) money = 0;
